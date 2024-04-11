@@ -1,0 +1,43 @@
+1. /topconfig/subconfig/tile_LazyRoCC
+
+1.custom0~3都是使用R类指令格式的，funct、rs2(32个通用寄存器的编号)、rs1(32个通用寄存器的编号)、xd、xs1、xs2、rd(32个通用寄存器的编号)、opcode都要以散开信号的形式进入到rocc模块中(op:0B/2B/5B/7B)
+
+2.在scala代码中如果RoCCIO中某些信号你不需要用到，那只需要将这部分信号强接false，那么就会在生成RTL的时候对这些信号进行优化去掉。也就是说RoCCIO是一个总的类，里面就申明了那么多的信号，用不用看你自己的实际情况
+abstract class LazyRoCC(
+      val opcodes: OpcodeSet,
+      val nPTWPorts: Int = 0,
+      val usesFPU: Boolean = false
+
+
+3. module name parameter (moduleName: String)
+class nvdla(configName: String, moduleName: String, hasSecondAXI: Boolean, dataWidthAXI: Int, synthRAMs: Boolean)
+  extends BlackBox with HasBlackBoxPath
+{
+  override def desiredName = moduleName
+  
+ACC输出 IO 通常需要赋值或者DontCare，LazyModule 输出 IO 不赋值不会报错）
+
+***ROCC IF Cache L1 OP: （利用带宽最好是定义为架构宽度寄存器或memory，简便操作和提高带宽）
+1. doLoad/doStore/RdCache/WrCache  内部不是接口总线，故地址必须对齐总线宽度操作： +4(32bit xlen) +8(64bit xLen)
+2. MemResp_ready 内部已经缺省为1；读Cache出数，cache没有控制机制；  
+
+***build.st  加模块的方法：（参 icenet）
+
+
+***chisel 主要问题：
+1. 版本问题 ，不同版本一致性很差；
+2. 调试难度很大；
+3. 语法须深入理解，否侧代码不一致设计；
+4. 开源后期生态维护较弱；
+
+***Chisel总结(本着取之所长)：
+1. 可以使用成熟的IP用于设计（rocket/boom/gemmi/DMA等 IP）
+2. 基于上述IP 增加ROCC/CSR等加速器设计，提升性能；
+3. 可使用成熟的模块生成器，生成现有的设计加快速度和评估（Xbar,SRAM,FIFO,REGS等）
+
+
+一、RoCC 命令接口及响应接口
+
+    列表命令接口（cmd开头）：Rocket CPU 发送指令到 RoCC
+    列表响应接口（resp开头） ：数据写回到 rd 标号的寄存器
+    busy ： 判断 RoCC 是否繁忙

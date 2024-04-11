@@ -1,0 +1,49 @@
+1.利用.insn模板进行编程
+
+在利用.insn模板进行编程时，不需要修改riscv的gcc任何代码，只需要用户根据指令编码设计模型。
+
+对于R-type的指令模板构成，有下面的通用处理办法：
+
+.insn r opcode， func3， func7， rd， rs1， rs2
+
+从c内联汇编编程的编程方式，cube指令的实现可以通过下面的指令进行操作。
+
+asm volatile（“.insn r 0x7b， 6， 6， %0， %1， x0” ： “=r”（cube） ： “r”（addr））;
+
+当然，也可以裸写汇编,a0，a1寄存器中存放的是函数调用时的两个参数。
+
+.insn r 0x7b， 6， 6， a0， a1， x0
+
+这样就完成了一条指令的功能。x0在riscv架构中，始终为0，所以该指令实际上就是讲a1的数据通过算数立方乘，将结果存放到a0寄存器。
+
+通过手写C代码进行测试
+
+static int custom_cube(int addr)
+{
+    int cube;
+    asm volatile (
+       ".insn r 0x7b, 6, 6, %0, %1, x0"
+             :"=r"(cube)
+             :"r"(addr)
+     );
+    return cube; 
+}
+
+反汇编后可以得到
+
+a0002c74 <custom_cube>:
+a0002c74: 7179                 addi sp,sp,-48
+a0002c76: d622                 sw s0,44(sp)
+a0002c78: 1800                 addi s0,sp,48
+a0002c7a: fca42e23           sw a0,-36(s0)
+a0002c7e: fdc42783           lw a5,-36(s0)
+a0002c82: 0c07e7fb           0xc07e7fb
+a0002c86: fef42623           sw a5,-20(s0)
+a0002c8a: fec42783           lw a5,-20(s0)
+a0002c8e: 853e                 mv a0,a5
+a0002c90: 5432                 lw s0,44(sp)
+a0002c92: 6145                 addi sp,sp,48
+a0002c94: 8082                 ret
+
+其中的0xc07e7fb，机器码交给实际的硬件进行解析，只要硬件设计指令按照指令规范即可。这样就能够实现算数立方的功能了。
+

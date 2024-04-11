@@ -1,0 +1,13 @@
+1.face detect (kcu105)
+  https://github.com/lulinchen/face_detect_open/blob/master/vivado/face/ku_HPC_TB_FMCH_HDMI2.xdc
+2.https://github.com/ucb-bar/chipyard
+
+
+
+
+
+
+chipyard:
+1. The memory address of CLINT and PLIC is specified by the RISC-V specification to 
+    be fixed at 0x0200_0000 and 0x0C00_0000
+2. new chipyard.config.WithBootROM(address = 0x10000 /* set your custom address here */)

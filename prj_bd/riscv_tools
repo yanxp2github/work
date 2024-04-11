@@ -1,0 +1,24 @@
+https://github.com/riscv/riscv-v-spec
+
+Good and Newest RISCV Tools:
+
+Step1:
+  Ubuntu：
+    sudo apt-get install autoconf automake autotools-dev curl python3 libmpc-dev libmpfr-dev libgmp-dev gawk build-essential bison flex texinfo gperf libtool patchutils bc zlib1g-dev libexpat-dev ninja-build
+  Cenos/feroda：
+    sudo yum install autoconf automake python3 libmpc-devel mpfr-devel gmp-devel gawk bison flex texinfo patchutils gcc gcc-c++ zlib-devel expat-devel
+    
+Step2:
+    git clone https://gitcode.net/mirrors/riscv/riscv-gnu-toolchain.git
+    
+Step3:
+    cd/ git submodule update --init --recursive
+    
+Step4:
+    sudo /opt/rv64
+    cd/ ./configure --prefix=/opt/rv64
+    make         //bare-metal riscv64
+    ./configure –prefix=/opt/rv64
+    make linux   //for linux  riscv64
+    if using 32bit and adding parameter
+

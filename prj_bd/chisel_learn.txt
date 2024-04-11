@@ -1,0 +1,303 @@
+1> lsb_release -a   (ubuntu22.4)
+2> sudo apt install openjdk-8-jdk git make gtkwave  (JDK8,11,17)
+
+一句话同步完成
+val bntsync=RegNext(RegNext(io.bnt))
+val risingEdge = din & !(RegNext(din))
+
+一句话例化完成
+val u_arbiter = Module(new Arbiter(UInt(8.W), 2)) 
+val u_queue   = Module(new Queue(UInt(8.W), entries = 16))
+
+sbt "runMain <对象名(而不是文件名)>"
+
+clock & reset全局使用
+ blackbox.io.clock := clock
+ blackbox.io.reset := reset
+ 
+ 
+ 组合电路与运算符
+val and = a & b		// 按位与
+val or = a | b		// 按位或
+val xor = a ^ b		// 按位异或
+val not = ~a		// 按位取反
+val shiftleft = a << b
+val shiftright = a >> b
+
+val add = a + b		// 加法
+val sub = a - b		// 减法
+val neg = -a		// 取相反数
+val mul = a * b		// 乘法
+val div = a / b		// 除法
+val mod = a % b		// 取余
+
+&&	逻辑与	Bool
+>	大于	UInt、SInt，返回Bool
+>=	大于等于 UInt、SInt，返回Bool
+<	小于	UInt、SInt，返回Bool
+<=	小于等于 UInt、SInt，返回Bool
+===	等于	UInt、SInt，返回Bool
+=/=	不等于	UInt、SInt，返回Bool
+
+val lSet   = x.andR		// 与规约
+val anySet = x.orR		// 或规约
+val parity = x.xorR		// 异或规约
+
+x(n)	        提取第n位	       UInt、SInt，返回Bool
+x(end, start)	提取第start到第end位	UInt、SInt，返回UInt
+Fill(n, x)	位向量x复制n次	      UInt，返回UInt
+a ## b	        位向量拼接	      UInt、SInt，返回UInt
+Cat(a, b, ...)	位向量拼接	      UInt、SInt，返回UInt
+
+val y = Mux(sel, a, b)
+ 
+仅输出文件更名：
+//rename module
+override lazy val desiredName = "axi4cfg"
+override def desiredName: String = blackBoxFile
+addResource(s"/vsrc/$blackBoxFile.v")
+
+Decoupled(...)：可以传入任意的数据类型，然后返回一个ready-valid接口，此时ready是input信号，valid和bits都是output信号。因此它是属于数据生产者producer的端口。
+Flipped(Decoupled(...))Flipped()会将ready-valid接口的信号方向进行取反，因此此时ready是output信号，valid和bits都是input信号
+
+
+object Verilog extends App {
+    println("Generating Hardware")
+    implicit val p = Parameters.empty
+    (new ChiselStage).emitVerilog(LazyModule(new Xbar()).module,Array("-td","gen"))
+
+在生成verilog代码时，单独综合某一模块，所有的端口与chisel代码保持一致，但是在综合Top模块时，调用的某些模块端口被优化，优化的部分内容缺失后无法实现设置的功能，可以取消相关优化
+chisel dontTouch
+
+import chisel3.dontTouch
+dontTouch(io)
+val a = dontTouch(...)
+
+chisel语法简单讲解:
+Bundle相当于是c里面的struct，就是一个把很多数据打包的结构。
+ IO()表示其中的东西是作为一个module的input output 端口。
+chisel有两类硬件的数据类型，分别是Bits以及Int，就是表示读bit以及读数字，其中Int类型分为UInt与SInt，表示按照unsigned 还是 signed来读。Bits,UInt以及SInt都通过在()中添加“数字.W”的内容来表明这是多少位宽。之所以要在数字后面加个.W，是因为如果只有(数字)，那么代表的是取数据的位置。
+    
+wire相关：
+val a = Wire(UInt(8.W))就是定义了一个8位宽的wire。
+val b = a(3) 表示b是前面定义的a的第三位。
+val c = 7.U(10.W) 就表示这个c是一个用10位无符号方法来表示的数字7
+
+reg相关:
+
+val accumulators = RegInit(VecInit(Seq.fill(8)(0.U(32.W))))
+accumulators(0-7) 
+RegInit(0.U(15.W))
+RegInit(VecInit(10, UInt(32.W)))
+Reg(UInt(8.W))            // also good!
+Reg(chiselTypeOf(io.my_signal) // good!
+RegNext(io.my_signal)
+RegNext(RegNext(io.my_signal))
+
+
+
+def fire: Bool = ready && valid
+val a2 = Reg(UInt(8.W))就是定义了8位宽的reg。
+val a3 = RegInit(0.U(8.W)) 表示这是个初始值为0的8位reg。
+a3 := a2     #reg(a3)的输入用:=连接
+val q = a3   #reg(a3)的输出用=连接
+
+IO相关:
+而IO则用于表示一个模块的接口
+
+var和val:
+在Scala中，变量分为var和val两种类型，前者是可变的，后者是不可变的。而在Chisel中，我们只需要使用val来描述电路，即不可变的Scala变量
+ 用val --> "="   其他：  ":="
+
+// Tie off unused channels 
+in.b.valid := false.B
+in.c.ready := true.B
+in.e.ready := true.B
+
+class MyIO extends Bundle {
+   val in = Input(Vec(5, UInt(32.W)))
+   val out = Output(UInt(32.W))
+}
+......
+   val io = IO(new MyIO)  // in是输入，out是输出
+......
+   val io = IO(Flipped(new MyIO))  // out是输入，in是输出
+ 
+ 翻转方向的端口列表通常配合整体连接符号“<>”使用。该操作符会把左右两边的端口列表里所有同名的端口进行连接，而且同一级的端口方向必须是输入连输出、输出连输入，父级和子级的端口方向则是输入连输入、输出连输出。注意，方向必须按这个规则匹配，而且不能存在端口名字、数量、类型不同的情况。这样就省去了大量连线的代码。
+   lass MyIO extends Bundle {
+   val in = Input(Vec(5, UInt(32.W)))
+   val out = Output(UInt(32.W))
+}
+   val io = IO(new Bundle {
+       val x = new MyIO       
+       val y = Flipped(new MyIO)
+   })
+
+   io.x <> io.y  // 相当于 io.y.in := io.x.in; io.x.out := io.y.out 
+   
+对于要多次例化的重复模块，可以利用向量的工厂方法VecInit[T <: Data]。因为该方法接收的参数类型是Data的子类，而模块的字段io正好是Bundle类型，并且实际的电路连线仅仅只需针对模块的端口，所以可以把待例化模块的io字段组成一个序列，或者按重复参数的方式作为参数传递。通常使用序列作为参数，这样更节省代码。生成序列的一种方法是调用单例对象Seq里的方法fill，该方法的一个重载版本有两个单参数列表，第一个接收Int类型的对象，表示序列的元素个数，第二个是传名参数，接收序列的元素。
+
+因为Vec是一种可索引的序列，所以这种方式例化的多个模块类似于“模块数组”，用下标索引第n个模块。另外，因为Vec的元素已经是模块的端口字段io，所以要引用例化模块的某个具体端口时，路径里不用再出现“io”。例如：
+class Mux4_2 extends Module {
+  val io = IO(new Bundle {
+    val in0 = Input(UInt(1.W))
+    val in1 = Input(UInt(1.W))
+    val in2 = Input(UInt(1.W))
+    val in3 = Input(UInt(1.W))
+    val sel = Input(UInt(2.W))
+    val out = Output(UInt(1.W))
+  })
+  // 例化了三个Mux2，并且参数是端口字段io
+  val m = VecInit(Seq.fill(3)(Module(new Mux2).io))  
+  m(0).sel := io.sel(0)  // 模块的端口通过下标索引，并且路径里没有“io”
+  m(0).in0 := io.in0
+  m(0).in1 := io.in1
+  m(1).sel := io.sel(0)
+  m(1).in0 := io.in2
+
+
+位拼接
+
+单例对象Cat有两个apply方法，分别接收一个Bits类型的序列和Bits类型的重复参数，将它们拼接成一个UInt数。前面的参数在高位。例如：
+
+    Cat("b101".U, "b11".U)  // 等于"b10111".U
+
+    Cat(myUIntWire0, myUIntWire1)  // 动态拼接
+
+    Cat(Seq("b101".U, "b11".U))  // 等于"b10111".U
+
+    Cat(mySeqOfBits)  // 动态拼接 
+
+Chisel可以动态定义模块的名字，也就是转成Verilog时的模块名不使用定义的类名，而是使用重写的desiredName方法的返回字符串。模块和黑盒都适用。例如：
+
+class Coffee extends BlackBox {
+   val io = IO(new Bundle {
+       val I = Input(UInt(32.W))
+       val O = Output(UInt(32.W))
+   })
+   override def desiredName = "Tea"
+}
+
+    
+class相关：
+class  XXX extend Module/Bundle  表示XXX是个verilog中的module或者"一捆数据"（C语言中的struct）。
+例化class的方法和c一样的，就是用new XXX()。 
+在chisel中最终生成代码的时候，会用object extend App,这就完全是Scala的做法了
+
+ object是单例的类对象，用来装一些常数。比如代码中val WORD_LEN = 32这样的常数设定就放在一个object Consts中。
+chisel与scala的核心不同就是chisel是在描述硬件，所以有一套专门的描述硬件的负号，比如:=是chisel在做硬件的连接，=就是scala在做软件赋值。
+ 再比如普通的if else 都是scala的软件语言，when，elsewhen就是chisel在描述硬件的if else逻辑，只有when描述的硬件逻辑才会实现成rtl。
+ 
+ ：
+这里的对在mem中例化的接口class(ImemPortIo)的连线方法比较值得注意，用的方式是
+  val core   = Module(new Core())
+  val memory = Module(new Memory())
+  core.io.imem <> memory.io.imem
+  io.exit := core.io.exit 
+  
+hisel可以内嵌verilog代码，chisel3.util包里有一个trait HasBlackBoxInline，调用方法setInline()可以在chisel代码里内嵌verilog代码 
+在变量初始化时使用等号，在赋值时使用:=，代表左侧变量由右侧表达式驱动
+另外scala中提供比较常见的如多选器，连接器
+  val s = true.B
+  io.out_mux := Mux(s, 3.U, 0.U) 
+  io.out_cat := Cat(2.U, 1.U) 
+对于加法运算，Chisel提供了两种加法运算，+&表示会保留进位，+不保留进位
+val result = when(squareIt) { x * x }.otherwise { x }
+
+包括7
+for (i <- 0 to 7) { print(i + " ") }
+println()
+
+不包括7
+for (i <- 0 until 7) { print(i + " ") }
+println()
+
+
+ 1) AXI4Imp继承自SimpleNodeImp，所以只有一组D/U/E/B参数，没有再进一步对其做I/O区分；即：
+ 
+D: AXI4MasterPortParameters
+U: AXI4SlavePortParameters
+E: AXI4EdgeParameters
+B: AXI4Bundle 
+
+reg:
+异步输入*****
+val btnSync = RegNext(RegNext(btn))
+
+
+（1）Decoupled（解耦）用法
+
+如图1所示，Decoupled接口是一个与握手信号Valid和Ready有关的接口。Producer（生产者）驱动数据(bits)和Valid线，Consumer（消费者）驱动Ready线。当生产者产生的数据准备就绪时，生产者将Valid信号拉高。当消费者准备接收数据时，消费者把Ready信号拉高。如果Valid和Ready信号同时处在高电平时，生产者和消费者发生交火（fire）。
+    ready：高有效时表示数据接收者consumer已经准备好接收信号，由consumer驱动。
+    valid：高有效时表示数据生产者producer已经准备好待发送的数据了，由producer驱动。
+    bits：是要在producer与consumer之间传输的数据。
+
+需要注意的是，*****valid和ready信号之间不能存在组合逻辑关系，valid信号应该只依赖于此时的源数据是否有效，ready信号应该只依赖于此时的数据接收者是否准备好接收数据了。当在某个时钟周期，valid和ready同时有效时，数据被视为传输
+创建ready-valid接口很简单，使用单例对象Decoupled即可创建，有以下两种形式：
+    Decoupled(...)：可以传入任意的数据类型，然后返回一个ready-valid接口，此时ready是input信号，valid和bits都是output信号。因此它是属于数据生产者producer的端口。
+    Flipped(Decoupled(...))：Flipped()会将ready-valid接口的信号方向进行取反，因此此时ready是output信号，valid和bits都是input信号。因此它是属于数据接收者consumer的端口。
+数据接收者和发送者都是相对的，一定要根据具体的情况正确设置信号方向。
+
+2）for循环的使用
+
+从0循环到7（包括7）
+
+for (i <- 0 to 7) { print(i + " ") }
+
+从0循环到7（不包括7）
+
+for (i <- 0 until 7) { print(i + " ") }
+
+从0循环到10（包括10）步长2
+
+for(i <- 0 to 10 by 2) { print(i + " ") }
+
+注：until后面的一个值如果采用输入参数形式，该参数需要设置为Int型
+
+（3）when判断用法
+when (判断条件){
+
+执行的操作
+
+} .elsewhen(判断条件){
+
+执行的操作
+
+} .elsewhen(判断条件){
+
+执行的操作
+
+} .elsewhen(判断条件){
+
+} .otherwise {
+
+执行的操作
+
+}
+（4）条件选择
+
+switch (io.sel){
+is (0.U) { r0 := word0 }
+is (1.U) { r0 := word1 }
+is (2.U) { r0 := word2 }
+is (3.U) { r0 := word3 }
+}
+
+（5）变量初始化
+reg型变量
+  val indexID = RegInit(0.U(numTxReg.W))
+
+wire型变量
+  val indexID =  WireInit (0.U(numTxReg.W))
+  
+  (6) log2Ceil 求对数,向上取整
+  
+  为了允许加速器直接访问一级数据高速缓存，RoCC接口为内存请求mem_req和响应mem_resp指定了两个通道。
+
+mem_req sub-interface:
+当加速器要向内存发出加载或存储操作时，可以使用mem_req子接口。mem_req链接也基于Decoupled接口。
+
+mem_resp sub-interface:
+该链接存在实质性差异，实际上，它不是基于Decoupled接口的。这是因为协处理器无法使缓存保持等待状态，因此协处理器必须接受响应而不能延迟事务。实际上，mem_resp子接口不提供就绪信号，而是基于更简单的“有效”接口。这意味着只要有效线为高，协处理器就必须接受每个内存响应。使用此接口，发送方（缓存）驱动数据和有效信号，而接收方（加速器）只需要检查有效线是否高并接受传入的数据即可。
+
+

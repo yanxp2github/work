@@ -1,0 +1,9 @@
+后仿四件套:
+
+1.后端提供的netlist，
+
+2.sdf，有ff,ss,tt。用来测试不同工艺下的特性
+
+3.不带复位端的reg list。no_reset_regdrposite.sv。里边是对寄存器初始值的赋值。
+
+4.sync cell第一级的reg list。第一级会有亚稳态，后端提供notiming_check.tcheck，验证提供no_timing_check.tcl，tcl文件里要source这个*.tcheck。不需要对第一级ff做时序检查，时序检查从第二级开始做。

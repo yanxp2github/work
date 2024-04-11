@@ -1,0 +1,383 @@
+/home/baidu/work/qlrc_linux/vivado-risc-v/rocket-chip/src/main/scala/system/Configs.scala
+/home/baidu/work/qlrc_linux/vivado-risc-v/rocket-chip/src/main/scala/subsystem/Configs.scala
+/home/baidu/work/qlrc_linux/vivado-risc-v/rocket-chip/src/main/scala/tile/LazyRoCC.scala
+
+rocket-chip Core:(AISC or FPGA)
+1. Core type and number and ROCC; conifg
+2. Addr extend and interrupt number; config
+3. JTAG Enable;                      config
+4. Mem & IO Space;                   sub_config
+5. Cache size;  hellaCache & Icache
+6. Prefech   ;  Icache
+7. 
+modify cache size
+// 
+Dcache:
+main/scala/rocket/HellaCache.scala (only ways midify)
+case class DCacheParams(
+    //nSets: Int = 128,     //MMM Add
+    nSets: Int = 64,
+    nWays: Int = 8,         //MMM Mod 4(16K)->8(32K)->16(64K)
+
+Icache:    
+main/scala/rocket/Icache.scala (only nsets midify)
+case class ICacheParams(
+    //nSets: Int = 256,  //MMM Add 64(16KB) 128(32KB) 256(64KB)
+    nSets: Int = 128,
+
+https://www.thinbug.com/q/31945779
+mmc info
+mmc part
+####################Platform #####################
+ubuntu : 20.4
+vivado : 2020.1+ (C2022.1)
+
+####################Github files #################
+https://github.com/alexforencich
+https://github.com/jiegec/Projects
+https://github.com/jiegec/rocket2thinpad
+https://github.com/wangrunji0408/UndergraduateProjects
+https://github.com/eugene-tarassov/vivado-risc-v
+sudo apt-get update#
+sudo apt install git make
+git clone https://github.com/eugene-tarassov/vivado-risc-v.git
+cd vivado-risc-v
+make apt-install
+make update-submodules
+
+#################### HW Part ######################
+###Rocket Config
+64-bit big RISC-V cores, Linux capable:
+        rocket64b1 - 1 core
+        rocket64b2 - 2 cores
+        rocket64b2l2 - 2 cores with 512KB level 2 cache
+        rocket64b2gem - 2 cores with 512KB level 2 cache and Gemmini accelerator
+        rocket64b4l2w - 4 cores with 512KB level 2 cache and wide 256-bit memory bus
+        rocket64b4 - 4 cores
+        rocket64b8 - 8 cores
+64-bit Sonic BOOM cores, Linux capable:
+        rocket64w1 - 1-wide Small BOOM, 1 core
+        rocket64x1 - 2-wide superscalar Medium BOOM, 1 core
+        rocket64y1 - 3-wide superscalar Large BOOM, 1 core
+        rocket64z1 - 4-wide superscalar Mega BOOM, 1 core
+32-bit small RISC-V cores, Linux not supported:
+        rocket32s1 - 1 core
+        rocket32s2 - 2 cores
+        rocket32s4 - 4 cores
+        rocket32s8 - 8 cores
+        rocket32s16 - 16 cores
+        
+Start FPGA PROJECT:        
+make CONFIG=rocket64b2l2 BOARD=vc707 bitstream
+make CONFIG=rocket64b2l2 BOARD=kc705 bitstream
+make CONFIG=rocket64b2l2 BOARD=kc705 vivado-tcl
+make CONFIG=rocket64b2l2 BOARD=genesys2 bitstream
+
+#####QL RC ####################################
+make CONFIG=rocket64b1 BOARD=kc705 vivado-tcl
+make CONFIG=rocket64b1 BOARD=kcu105 vivado-tcl
+make CONFIG=rocket64b1 BOARD=kcu105 bitstream
+make CONFIG=rocket64b1 BOARD=zcu104 bitstream
+make CONFIG=rocket64b2 BOARD=zcu104 bitstream
+make CONFIG=rocket64b1 BOARD=zcu104 vivado-tcl
+make CONFIG=rocket64b1 BOARD=zcu104 MODE=sim vivado-tcl
+make CONFIG=rocket64b2 BOARD=zcu104 MODE=sim vivado-tcl
+
+ZCU104 (modify makrfile.inc when memoey size change first)
+make CONFIG=rocket64b2l2 BOARD=zcu104 bitstream  (SD boot)
+make CONFIG=rocket64b2l2 BOARD=zcu104 vivado-tcl (SD boot)
+make CONFIG=rocket64b2l2 BOARD=zcu104 MODE=sim vivado-tcl (Jump 80000000)
+
+qi1_gc
+v1
+make CONFIG=rocket64b2 BOARD=zcu104 vivado-tcl    (FPGA)
+make CONFIG=rocket64b2 BOARD=zcu104 MODE=asic vivado-tcl(ASIC)
+
+v2
+make CONFIG=rocket64b1 BOARD=zcu104 bitstream            (FPGA)
+make CONFIG=rocket64b1 BOARD=zcu104 MODE=asic vivado-tcl (ASIC)
+make CONFIG=rocket64b4 BOARD=zcu104 MODE=asic vivado-tcl (ASIC)
+make CONFIG=rocket64b4 BOARD=zcu104 vivado-tcl           (FPGA)
+
+
+Porting KCU105 Board from vc707 FPGA Project
+bit->FPGA fLASH
+
+//myROCC
+make CONFIG=rocket64b1RACC BOARD=zcu104 MODE=asic vivado-tcl
+make CONFIG=Rocket64b1RTC  BOARD=zcu104 MODE=asic vivado-tcl
+make CONFIG=Rocket64b1RDMA BOARD=zcu104 MODE=asic vivado-tcl
+#################### SW Part ######################
+### Software SD Part ###
+Way1:     Etcher   -> xxx.img -> SD/miniSD  (*recommand*)
+Way2:     ./mk-sd-card  -> xxx.img
+(you can get xxx.img github releases area)
+
+#################### DEBUG Part ######################
+bit->FPGA fLASH  + SD INSERT   (POWER ON)
+Look at:Uart output
+
+make  CONFIG=rocket64b2  BOARD=YOURBOARNAME  vivado-tcl
+#################### Build My Board #################
+1. Setup a board file vc707 as save zcu105
+2. instead of uart.xdc/sdc.xdc/top.xdc/ethernet.xdc of kcu105s
+3  Modefy Makefile.inc with kcu105 board information
+4  Modefy name with ethnet_kcu105.tcl from ethernet_vc707.v (best as same as board)
+5. modify ethnet_kcu105.v ref ethnet_vc707.v(best as same as board)
+6. instead of riscv2022.1.tcl form write_bd_tcl of kcu105 BD
+7. check bootrom.dts right
+make  CONFIG=rocket64b2l2  BOARD=kcu105  vivado-tcl
+make  CONFIG=rocket64b2l2  BOARD=kcu105  bitstream
+#################### Build My Board #################
+
+
+Debug Project
+#####################################################
+1. SD Error
+   SD HW Error(PIN define/Votage)
+   HW -> check
+2. Top Module...
+   Ethnet config (bus no respone)
+   SW -> disable ethnet dts part 
+3. UUID
+   no detect card insert
+   SW -> disable check card insert linux driver (0x4e register)
+4. SD 
+   check makefile.inc *.dtb memory size
+
+iSSU
+#####################################################
+PMOD SD card adapter.
+ tried to add USB 2.0 IP to the block design - it worked fine.
+you can disable this by disconnecting UART CTSn (Clear To Send) signal and connecting it to logic '0'.
+(/proc/device-tree/io-bus)
+
+Gave up waiting for root file system device.  Common problems: bus or (Card work voltage:3300/1800)
+Check SD卡控制器的参数:
+1.voltage/card detect level/..
+
+IOB true  :SDC improve timing onlyNo. It helps to improve timing. But, if it is not supported, just remove it.
+the reset is nice to have, but not required. You need to set CONFIG.capabilies_reg {0x0001} in your design Tcl file to tell SD driver that reset is not supported. Like, for example, in VC707 files.
+
+the device tree is linked with bootrom, then bootrom is imported into the RocketChip Chisel code. So, if you modify the device tree, you need to regenerate bootrom and your RocketChip HDL - the Verilog file generated from Chisel.
+
+The Makefile knows all these dependencies, so you can just run make like this:
+
+make CONFIG=rocket64b2 BOARD=nexys-video vivado-tcl
+Ethernet PHY: change interface from RGMII to GMII, re-calibrate input/output delays
+SD card: remove reset signal. Optionally, add write protect signal
+UART: add CTSn/RTSn signals
+I have added simple bare metal hello world example to the repo: bare-metal. You can put in on SD card instead of Linux.
+
+add xilinx GPIO
+1.kerner config or driver
+2.device Tree
+https://xilinx-wiki.atlassian.net/wiki/spaces/A/pages/18841846/AXI+GPIO
+
+The reset is nice to have, but not required. You need to set CONFIG.capabilies_reg {0x0001} in your design Tcl file to tell SD driver that reset is not supported. Like, for example, in VC707 files.
+
+
+XILINX xsdb user guide
+https://github.com/eugene-tarassov/vivado-risc-v/discussions/104#discussioncomment-3866234
+
+
+##################rocketchip ############################
+https://blog.csdn.net/JACKLJ1998/article/details/124907527
+
+
+https://blog.csdn.net/heyuming20062007/article/details/120675191?spm=1001.2101.3001.6661.1&utm_medium=distribute.pc_relevant_t0.none-task-blog-2%7Edefault%7ECTRLIST%7ERate-1-120675191-blog-111600428.pc_relevant_default&depth_1-utm_source=distribute.pc_relevant_t0.none-task-blog-2%7Edefault%7ECTRLIST%7ERate-1-120675191-blog-111600428.pc_relevant_default&utm_relevant_index=1
+#####  chipyard ##############################
+https://blog.csdn.net/luoganttcc/article/details/124593972 (chipyard all Flow)
+git clone https://github.com/ucb-bar/chipyard.git
+./scripts/init-submodules-no-riscv-tools.sh
+//./scripts/build-toolchains.sh
+source ./env.sh
+cd sims/vcs
+make
+###########################################
+1.高性能周期精确验证器
+部分功能进入目录rocket-chip/emulator/文件夹下实现
+#all cases
+make -jN run    
+#tests cases
+make -jN run-asm-tests-debug
+#benchmarks cases
+make -jN run-bmark-tests-debug
+2.基于FPGA版/可综合版的RTL代码
+该部分功能进入目录rocket-chip/vsim/文件夹下实现，使用make verilog指令产生FPGA版/可综合版本RTL代码，后面带有CONFIG属性为，使用make -jN run完成VCS仿真。
+#FPGA代码生成命令
+make verilog CONFIG=freechips.rocketchip.system.DefaultFPGAConfig
+#可综合代码生成命令
+make verilog
+#VCS运行命令
+make -jN run CONFIG=freechips.rocketchip.system.DefaultFPGAConfig
+
+
+
+apt-get -y install build-essential nghttp2 libnghttp2-dev libssl-dev
+
+
+
+
+################ vivado vivdeo
+https://support.xilinx.com/s/topic/0TO2E000000YNwTWAW/xilinx-video-series?language=en_US&tabset-50c42=2&tabset-2ef67=2
+
+################ Riscv tools #################################
+https://blog.csdn.net/l919898756/article/details/80987091
+
+###################### git commad ##################################
+git clone
+git pull
+git log
+gitk
+commit xxxxxxxxxxxxxxxxxxx
+
+###################### VCS setup ##################################
+https://blog.csdn.net/wxkhturfun/article/details/120180635
+
+
+
+
+
+
+########################### ^Rocketchip Flow^ ###############################
+1.get code
+$ git clone https://github.com/ucb-bar/rocket-chip.git
+$ cd rocket-chip
+$ git submodule update --init
+2.riscv-tools
+$ git clone https://github.com/freechipsproject/rocket-tools
+$ cd rocket-tools
+$ git submodule update --init --recursive
+$ export RISCV=/path/to/install/riscv/toolchain
+$ export MAKEFLAGS="$MAKEFLAGS -jN" # Assuming you have N cores on your host system
+$ ./build.sh
+$ ./build-rv32ima.sh (if you are using RV32).
+3.chisel3 Setup
+git clone https://github.com/chipsalliance/chisel3.git
+cd chisel3
+sbt compile 
+4.构建C模拟器
+$ cd emulator
+$ make
+
+5.VCS模拟器 
+$ cd vsim
+$ make (FPGA)
+$ make verilog (ASIC)
+
+$ make -jN run-asm-tests-debug
+$ make -jN run-bmark-tests-debug
+
+6.Other tools
+apt-get -y install build-essential nghttp2 libnghttp2-dev libssl-dev
+################sbt tools setup #################
+Linux (deb)
+echo "deb https://repo.scala-sbt.org/scalasbt/debian all main" | sudo tee /etc/apt/sources.list.d/sbt.list
+echo "deb https://repo.scala-sbt.org/scalasbt/debian /" | sudo tee /etc/apt/sources.list.d/sbt_old.list
+curl -sL "https://keyserver.ubuntu.com/pks/lookup?op=get&search=0x2EE0EA64E40A89B84B2DF73499E82A75642AC823" | sudo apt-key add
+sudo apt-get update
+sudo apt-get install sbt
+
+Linux (rpm)
+# remove old Bintray repo file
+sudo rm -f /etc/yum.repos.d/bintray-rpm.repo || true
+curl -L https://www.scala-sbt.org/sbt-rpm.repo > sbt-rpm.repo
+sudo mv sbt-rpm.repo /etc/yum.repos.d/
+sudo yum install sbt
+
+
+
+#################################rocket_chip ############################
+Modify L1 Cache Size:
+
+1. Icache /rocket/ICache.scala
+case class ICacheParams(
+    nSets: Int = 128,  //MMM Mod 64 -> 128(64KB)
+2. Dcache /rocket/hellaCache.scala
+case class DCacheParams(
+    nWays: Int = 16,    //MMM Mod 4 -> 16(64KB)
+    
+3.  subsystem/Configs
+    MMEM/MMIO Adderass/Space
+    bootrom
+    Scratchpads address
+    
+    
+    
+################## DTS #####################    
+ The Device Tree (dtb files) is used by u-boot and Linux. The tree is stored in FPGA (together with bootrom) and allows Linux to discover RISC-V configuration: number of cores, peripheral devices, interrupts, etc. When Linux boots, it reads this info at pre-defined address in ROM and setups all necessary drivers.
+ 
+ riscv 3.51 version
+ (update 3.5 bootrom and change 32bit address ok, uboot stop in DRAM:)
+ 
+ 
+ 
+ 五 riscv openocd 安装
+1 下载代码
+  git clone https://github.com/riscv/riscv-openocd.git
+2 安装依赖库
+  sudo apt-get install libftdi-dev libusb-1.0-0-dev
+3 ../configure --enable-jlink
+  make
+4 启动
+./src/openocd -f bd_riscv_s2c.cfg -d3
+5 配置文件 bd_riscv_s2c.cfg
+log_output bdriscv_debug0.log #log文件名称
+
+gdb_port 1236 # 端口号 用于 target remote: 1236 
+telnet_port 4448
+
+adapter_khz 8000 
+set _use_smp 0
+adapter_nsrst_delay 2000
+
+interface jlink
+#source [find interface/jtagkey.cfg]
+reset_config srst_only
+
+#### QEMU  ###
+$ make u-boot-qemu opensbi-qemu
+$ ./qemu/boot_qemu.sh
+Output:
+Debian GNU/Linux 12 debian ttyS0
+debian login:
+I tried the following as login and password but I get login incorrect
+debian login: debian
+password: debian
+
+
+
+
+1.Generate workstation
+  $ sudo apt install git make
+  $ git clone https://github.com/eugene-tarassov/vivado-risc-v.git
+  $ cd vivado-risc-v
+  $ make apt-install
+  $ make update-submodules
+2.Build FPGA bitstream
+  $ source /opt/Xilinx/Vivado/2021.1/settings64.sh
+  $ make CONFIG=rocket64b1 BOARD=arty-a7-100t bitstream
+3.Prepare SD card
+  $ ./mk-sd-card
+4.Load bitstream to FPGA
+5.Start uart terminal
+6.Insert SD card into pmod microSD
+
+
+https://github.com/eugene-tarassov/vivado-risc-v/issues/155
+
+
+
+ifndef SYTHSYS:
+
+
+Rocket Chip仿真基础设施依赖于所有初始化为0或1的状态。如果在仿真开始时没有初始化寄存器，某些仿真器（如Synopsys VCS）可能会将寄存器初始化为X，这可能导致仿真失败（这是您在定义SYNTHESIS时）时观察到的行为。因为测试应该对随机初始化很稳健，所以预合成RTL被注释为随机初始化寄存器状态。
+
+综合工具（例如Synopsys Design Compiler）将忽略这些ifndef块中包含的RTL。请注意，合成后RTL的仿真还必须将所有寄存器初始化为0或1，以使仿真正常工作。
+
+
+Rocket Chip仿真基础设施依赖于所有初始化为0或1的状态。如果在仿真开始时没有初始化寄存器，某些仿真器（如Synopsys VCS）可能会将寄存器初始化为X，这可能导致仿真失败（这是您在定义SYNTHESIS时）时观察到的行为。因为测试应该对随机初始化很稳健，所以预合成RTL被注释为随机初始化寄存器状态。
+
+综合工具（例如Synopsys Design Compiler）将忽略这些ifndef块中包含的RTL。请注意，合成后RTL的仿真还必须将所有寄存器初始化为0或1，以使仿真正常工作。
+

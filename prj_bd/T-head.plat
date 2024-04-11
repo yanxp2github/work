@@ -1,0 +1,11 @@
+Evalation T-head e902/E906/C906/C910
+how to get:
+https://github.com/T-head-Semi
+git clone https://github.com/T-head-Semi/openc910.git
+git clone https://github.com/T-head-Semi/openc906.git
+git clone https://github.com/T-head-Semi/opene906.git
+git clone https://github.com/T-head-Semi/opene902.git
+
+https://blog.csdn.net/qq_40011737/category_11849156.html?spm=1001.2014.3001.5482 (blog/evn/fpga porting)
+https://occ.t-head.cn/community/download?id=4049193882418745344  (tools)
+(Xuantie-900-gcc-elf-newlib-x86_64-V2.2.5-20220323.tar.gz)

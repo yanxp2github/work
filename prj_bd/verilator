@@ -1,0 +1,17 @@
+install 5.008
+
+git clone https://github.com/verilator/verilator
+cd verilator
+git checkout v5.008
+autoconf
+./configure
+make
+sudo make install
+export VERILATOR_ROOT=/usr/local/share/verilator
+verilator -Wall -cc my_design.v
+
+
+
+--timing //support timing
+run verilator
+verilator --cc --exe --build top_tb.cpp top_tb.sv  cpu0_top.v bd0_riscv.v bd0_srams.v plusarg_reader.v -Wno-WIDTH -Wno-UNOPTFLAT -Wno-IMPLICIT
